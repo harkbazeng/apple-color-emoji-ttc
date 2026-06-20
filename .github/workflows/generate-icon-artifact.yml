@@ -48,9 +48,9 @@ jobs:
 
       - name: Show metadata
         run: |
-          echo "Font Name: ${{ steps.font.outputs.font_name }}"
-          echo "Font Version: ${{ steps.font.outputs.font_version }}"
-          echo "Artifact Name: ${{ steps.font.outputs.artifact_name }}"
+          echo "Font Name: ${{ steps.get_font_metadata.outputs.font_name }}"
+          echo "Font Version: ${{ steps.get_font_metadata.outputs.font_version }}"
+          echo "Artifact Name: ${{ steps.get_font_metadata.outputs.artifact_name }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
