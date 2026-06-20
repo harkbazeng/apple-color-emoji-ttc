@@ -1,0 +1,15 @@
+name: Generate Icon Artifact
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    if: github.repository == 'harkbazeng/apple-color-emoji-ttc'
+    steps:
+      - name: Create artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-color-emoji
+          path: "/System/Library/Fonts/Apple Color Emoji.ttc"
