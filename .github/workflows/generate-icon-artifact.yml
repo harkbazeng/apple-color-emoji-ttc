@@ -1,4 +1,4 @@
-name: Generate Icon Artifact
+name: Generate Apple Color Emoji Artifact
 
 on:
   workflow_dispatch:
@@ -6,26 +6,55 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+
     if: github.repository == 'harkbazeng/apple-color-emoji-ttc'
 
     steps:
-      - name: Get Apple Color Emoji version
-        id: font_version
+      - name: Set up Python virtual environment
         run: |
-          python3 -m pip install fonttools
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install fonttools
+
+      - name: Get font metadata
+        id: get_font_metadata
+        run: |
+          source .venv/bin/activate
           
-          VERSION=$(python3 <<'PY'
+          python <<'PY'
           from fontTools.ttLib import TTCollection
+          import os
+          
           ttc = TTCollection("/System/Library/Fonts/Apple Color Emoji.ttc")
           font = ttc.fonts[0]
-          print(font["name"].getName(4, 3, 1).toUnicode())
-          PY
+          font_name_record = (font["name"].getName(4, 3, 1, 1033) or font["name"].getName(4, 1, 0, 0))
+          font_version_record = (font["name"].getName(5, 3, 1, 1033) or font["name"].getName(5, 1, 0, 0))
+          font_name = (font_name_record.toUnicode() if font_name_record else "Apple Color Emoji")
+          font_version = (font_version_record.toUnicode() if font_version_record else "unknown")
+          font_version = font_version.replace("Version ", "").strip()
+          artifact_name = (
+              f"{font_name}-{font_version}"
+              .replace("/", "-")
+              .replace("\\", "-")
+              .replace(":", "-")
+              .replace(" ", "-")
           )
-          
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"font_name={font_name}\n")
+              f.write(f"font_version={font_version}\n")
+              f.write(f"artifact_name={artifact_name}\n")
+          PY
 
-      - name: Create artifact
+      - name: Show metadata
+        run: |
+          echo "Font Name: ${{ steps.font.outputs.font_name }}"
+          echo "Font Version: ${{ steps.font.outputs.font_version }}"
+          echo "Artifact Name: ${{ steps.font.outputs.artifact_name }}"
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "Apple Color Emoji - ${{ steps.font_version.outputs.version }}"
-          path: "/System/Library/Fonts/Apple Color Emoji.ttc"
+          name: ${{ steps.get_font_metadata.outputs.artifact_name }}
+          path: /System/Library/Fonts/Apple Color Emoji.ttc
+          if-no-files-found: error
