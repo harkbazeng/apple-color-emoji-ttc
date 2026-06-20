@@ -12,16 +12,20 @@ jobs:
       - name: Get Apple Color Emoji version
         id: font_version
         run: |
-          FONT="/System/Library/Fonts/Apple Color Emoji.ttc"
-          VERSION=$(mdls -raw -name kMDItemVersion "$FONT" 2>/dev/null || true)
-          if [ -z "$VERSION" ] || [ "$VERSION" = "(null)" ]; then
-            VERSION="unknown"
-          fi
-          VERSION=$(echo "$VERSION" | tr ' /:' '---')
+          python3 -m pip install fonttools
+          
+          VERSION=$(python3 <<'PY'
+          from fontTools.ttLib import TTCollection
+          ttc = TTCollection("/System/Library/Fonts/Apple Color Emoji.ttc")
+          font = ttc.fonts[0]
+          print(font["name"].getName(4, 3, 1).toUnicode())
+          PY
+          )
+          
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create artifact
         uses: actions/upload-artifact@v4
         with:
-          name: "Apple Color Emoji - ${{ steps.font_version.outputs.version }}.ttc"
+          name: "Apple Color Emoji - ${{ steps.font_version.outputs.version }}"
           path: "/System/Library/Fonts/Apple Color Emoji.ttc"
